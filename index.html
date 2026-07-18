@@ -106,13 +106,12 @@
 
       const isOpenable = /^(https?:|intent:)/i.test(text);
       if (isOpenable) {
-        setStatus("QR riconosciuto, apertura in corso…", "ok");
+        setStatus("QR riconosciuto — tocca per aprire", "ok");
         const a = document.createElement("a");
         a.className = "openlink";
         a.href = text;
-        a.textContent = "Apri manualmente se non si apre da solo";
+        a.textContent = "Apri evento";
         statusEl.after(a);
-        setTimeout(() => { window.location.href = text; }, 700);
       } else {
         setStatus("QR letto ma non è un link valido: " + text, "err");
       }
