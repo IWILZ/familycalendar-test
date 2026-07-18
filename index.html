@@ -104,8 +104,8 @@
       scanning = false;
       if (stream) stream.getTracks().forEach((t) => t.stop());
 
-      const isUrl = /^https?:\/\//i.test(text);
-      if (isUrl) {
+      const isOpenable = /^(https?:|intent:)/i.test(text);
+      if (isOpenable) {
         setStatus("QR riconosciuto, apertura in corso…", "ok");
         const a = document.createElement("a");
         a.className = "openlink";
