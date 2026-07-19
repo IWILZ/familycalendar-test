@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Aggiungi dettagli — FamilyCalendar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --board:#2e3b32;
+    --board-dark:#25302a;
+    --paper:#fffdf6;
+    --paper-edge:#eee6d3;
+    --ink:#2b2b28;
+    --ink-soft:#6b6659;
+    --amber:#e8a33d;
+    --amber-dark:#c9822a;
+    --green-ok:#3f7d4f;
+    --ring:#8fd6ff;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(255,255,255,0.05), transparent 60%),
+      var(--board);
+    background-image:
+      radial-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+      radial-gradient(ellipse at 20% 0%, rgba(255,255,255,0.05), transparent 60%),
+      var(--board);
+    background-size: 3px 3px, auto, auto;
+    font-family:'Atkinson Hyperlegible', Arial, sans-serif;
+    color:var(--ink);
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding: 28px 16px 60px;
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .note{ animation: settle .5s cubic-bezier(.2,.9,.3,1.1) both; }
+    .chip, .btn-primary { transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease; }
+  }
+  @keyframes settle{
+    from{ transform: translateY(14px) rotate(0deg); opacity:0; }
+    to{ transform: translateY(0) rotate(-0.6deg); opacity:1; }
+  }
+
+  .board-label{
+    color: rgba(255,255,255,0.55);
+    font-size: 14px;
+    letter-spacing: .04em;
+    text-align:center;
+    margin: 0 0 18px;
+  }
+
+  .note{
+    background: var(--paper);
+    width: 100%;
+    max-width: 420px;
+    border-radius: 10px;
+    padding: 30px 26px 26px;
+    position: relative;
+    transform: rotate(-0.6deg);
+    box-shadow:
+      0 18px 30px -10px rgba(0,0,0,0.45),
+      0 2px 0 var(--paper-edge) inset;
+  }
+  .pin{
+    position:absolute;
+    top: -16px; left: 50%;
+    transform: translateX(-50%);
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ffd27a, var(--amber) 60%, var(--amber-dark));
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+  }
+
+  .eyebrow{
+    font-size: 15px;
+    color: var(--ink-soft);
+    margin: 6px 0 2px;
+  }
+  h1{
+    font-size: 34px;
+    line-height: 1.15;
+    margin: 0 0 4px;
+    font-weight: 700;
+  }
+  .when{
+    font-size: 17px;
+    color: var(--ink-soft);
+    margin: 0 0 22px;
+  }
+
+  label{
+    display:block;
+    font-size: 19px;
+    font-weight: 700;
+    margin: 22px 0 10px;
+  }
+  label .opt{
+    font-weight: 400;
+    color: var(--ink-soft);
+    font-size: 15px;
+  }
+
+  .chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .chip{
+    font-family:inherit;
+    font-size: 16px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    border: 2px solid var(--paper-edge);
+    background: #fffefb;
+    color: var(--ink);
+    cursor:pointer;
+  }
+  .chip:hover{ border-color: var(--amber); }
+  .chip:active{ transform: scale(0.97); }
+  .chip.selected{
+    background: var(--amber);
+    border-color: var(--amber-dark);
+    color: #2b1c04;
+    font-weight: 700;
+  }
+
+  input[type=text], textarea{
+    width: 100%;
+    font-family: inherit;
+    font-size: 22px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    border: 2px solid var(--paper-edge);
+    background: #fffefb;
+    color: var(--ink);
+  }
+  textarea{ min-height: 90px; resize: vertical; }
+  input[type=text]::placeholder, textarea::placeholder{ color: #b9b2a0; }
+
+  input:focus-visible, textarea:focus-visible, .chip:focus-visible, button:focus-visible{
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  .actions{
+    display:flex;
+    flex-direction:column;
+    gap: 12px;
+    margin-top: 30px;
+  }
+  .btn-primary{
+    font-family:inherit;
+    font-size: 22px;
+    font-weight: 700;
+    padding: 16px 20px;
+    border-radius: 12px;
+    border: none;
+    background: var(--green-ok);
+    color: white;
+    cursor:pointer;
+    box-shadow: 0 4px 0 #2c5c38;
+  }
+  .btn-primary:active{ transform: translateY(2px); box-shadow: 0 2px 0 #2c5c38; }
+  .btn-secondary{
+    font-family:inherit;
+    font-size: 17px;
+    padding: 10px;
+    border: none;
+    background: transparent;
+    color: var(--ink-soft);
+    text-decoration: underline;
+    cursor:pointer;
+  }
+
+  .done{
+    display:none;
+    text-align:center;
+    padding: 20px 0 6px;
+  }
+  .done.show{ display:block; }
+  .done .tick{
+    width:64px;height:64px;border-radius:50%;
+    background: var(--green-ok);
+    color:white;
+    display:flex;align-items:center;justify-content:center;
+    font-size:34px;
+    margin: 0 auto 14px;
+  }
+  .done p{ font-size:19px; margin:0; color:var(--ink); }
+  .form-body.hide{ display:none; }
+
+  .preview-tag{
+    max-width:420px;
+    margin: 16px auto 0;
+    text-align:center;
+    color: rgba(255,255,255,0.45);
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+  <div style="width:100%; max-width:420px;">
+    <p class="board-label">📌 lavagna di famiglia</p>
+
+    <div class="note">
+      <div class="pin"></div>
+
+      <div class="form-body" id="form-body">
+        <p class="eyebrow" id="persona-label">Papà ha aggiunto</p>
+        <h1 id="event-title">Cena</h1>
+        <p class="when" id="event-when">domani, 19:00 – 21:00</p>
+
+        <label for="loc-input">Dove? <span class="opt">(facoltativo)</span></label>
+        <div class="chips" id="loc-chips">
+          <button type="button" class="chip" data-val="Pizzeria da Peppino, via Roma 34">Da Peppino</button>
+          <button type="button" class="chip" data-val="Nonna Lina">Nonna Lina</button>
+          <button type="button" class="chip" data-val="Studio Dott. Rossi">Dott. Rossi</button>
+        </div>
+        <input type="text" id="loc-input" placeholder="Scrivi un indirizzo o un nome…" />
+
+        <label for="note-input">Note <span class="opt">(facoltativo)</span></label>
+        <textarea id="note-input" placeholder="Es. portare la torta, vestiti eleganti…"></textarea>
+
+        <div class="actions">
+          <button class="btn-primary" id="btn-save">Salva</button>
+          <button class="btn-secondary" id="btn-skip">Va bene così, non serve altro</button>
+        </div>
+      </div>
+
+      <div class="done" id="done-block">
+        <div class="tick">✓</div>
+        <p><strong id="done-title">Cena</strong> aggiornata</p>
+        <p style="color:var(--ink-soft); font-size:16px; margin-top:6px;">Ora è visibile anche sul display in cucina</p>
+      </div>
+    </div>
+
+    <p class="preview-tag">Anteprima — non ancora collegata al calendario reale</p>
+  </div>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const titolo = params.get('titolo') || 'Cena';
+  const persona = params.get('persona') || 'papa';
+  const quando = params.get('quando') || 'domani, 19:00 – 21:00';
+
+  document.getElementById('event-title').textContent = titolo;
+  document.getElementById('event-when').textContent = quando;
+  document.getElementById('persona-label').textContent =
+    (persona === 'mamma' ? 'Mamma ha aggiunto' : 'Papà ha aggiunto');
+  document.getElementById('done-title').textContent = titolo;
+
+  const locInput = document.getElementById('loc-input');
+  document.querySelectorAll('#loc-chips .chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#loc-chips .chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      locInput.value = chip.dataset.val;
+    });
+  });
+  locInput.addEventListener('input', () => {
+    document.querySelectorAll('#loc-chips .chip').forEach(c => c.classList.remove('selected'));
+  });
+
+  function finish(){
+    document.getElementById('form-body').classList.add('hide');
+    document.getElementById('done-block').classList.add('show');
+  }
+  document.getElementById('btn-save').addEventListener('click', finish);
+  document.getElementById('btn-skip').addEventListener('click', finish);
+</script>
+</body>
+</html>
