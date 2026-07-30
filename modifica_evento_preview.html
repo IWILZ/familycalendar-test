@@ -10,7 +10,6 @@
 <style>
   :root{
     --board:#2e3b32;
-    --board-dark:#25302a;
     --paper:#fffdf6;
     --paper-edge:#eee6d3;
     --ink:#2b2b28;
@@ -18,6 +17,7 @@
     --amber:#e8a33d;
     --amber-dark:#c9822a;
     --green-ok:#3f7d4f;
+    --red-err:#b3432f;
     --ring:#8fd6ff;
   }
   *{box-sizing:border-box;}
@@ -25,9 +25,6 @@
   body{
     min-height:100vh;
     background:
-      radial-gradient(ellipse at 20% 0%, rgba(255,255,255,0.05), transparent 60%),
-      var(--board);
-    background-image:
       radial-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
       radial-gradient(ellipse at 20% 0%, rgba(255,255,255,0.05), transparent 60%),
       var(--board);
@@ -82,17 +79,20 @@
     font-size: 15px;
     color: var(--ink-soft);
     margin: 6px 0 2px;
+    min-height: 19px;
   }
   h1{
     font-size: 34px;
     line-height: 1.15;
     margin: 0 0 4px;
     font-weight: 700;
+    min-height: 40px;
   }
   .when{
     font-size: 17px;
     color: var(--ink-soft);
     margin: 0 0 22px;
+    min-height: 21px;
   }
 
   label{
@@ -169,6 +169,7 @@
     box-shadow: 0 4px 0 #2c5c38;
   }
   .btn-primary:active{ transform: translateY(2px); box-shadow: 0 2px 0 #2c5c38; }
+  .btn-primary:disabled{ opacity: 0.6; cursor: default; }
   .btn-secondary{
     font-family:inherit;
     font-size: 17px;
@@ -180,21 +181,22 @@
     cursor:pointer;
   }
 
-  .done{
+  .stato{
     display:none;
     text-align:center;
     padding: 20px 0 6px;
   }
-  .done.show{ display:block; }
-  .done .tick{
+  .stato.show{ display:block; }
+  .stato .tick{
     width:64px;height:64px;border-radius:50%;
-    background: var(--green-ok);
     color:white;
     display:flex;align-items:center;justify-content:center;
     font-size:34px;
     margin: 0 auto 14px;
   }
-  .done p{ font-size:19px; margin:0; color:var(--ink); }
+  .stato.ok .tick{ background: var(--green-ok); }
+  .stato.err .tick{ background: var(--red-err); }
+  .stato p{ font-size:19px; margin:0; color:var(--ink); }
   .form-body.hide{ display:none; }
 
   .preview-tag{
@@ -214,9 +216,9 @@
       <div class="pin"></div>
 
       <div class="form-body" id="form-body">
-        <p class="eyebrow" id="persona-label">Papà ha aggiunto</p>
-        <h1 id="event-title">Cena</h1>
-        <p class="when" id="event-when">domani, 19:00 – 21:00</p>
+        <p class="eyebrow" id="persona-label">Caricamento…</p>
+        <h1 id="event-title">&nbsp;</h1>
+        <p class="when" id="event-when">&nbsp;</p>
 
         <label for="loc-input">Dove? <span class="opt">(facoltativo)</span></label>
         <div class="chips" id="loc-chips">
@@ -235,29 +237,87 @@
         </div>
       </div>
 
-      <div class="done" id="done-block">
-        <div class="tick">✓</div>
-        <p><strong id="done-title">Cena</strong> aggiornata</p>
-        <p style="color:var(--ink-soft); font-size:16px; margin-top:6px;">Ora è visibile anche sul display in cucina</p>
+      <div class="stato" id="stato-block">
+        <div class="tick" id="stato-tick">✓</div>
+        <p id="stato-testo">…</p>
       </div>
     </div>
 
-    <p class="preview-tag">Anteprima — non ancora collegata al calendario reale</p>
+    <p class="preview-tag" id="footer-tag">Collegato a Google Calendar</p>
   </div>
 
 <script>
+  // ---- Configurazione ----
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyDr6B1kDVW8kjmM2cMGbYx5jjoEkfi5OrHSdpfEIxmxbsLrcU1bXkLqvJFdVQ6G8NF/exec";
+
   const params = new URLSearchParams(location.search);
-  const titolo = params.get('titolo') || 'Cena';
-  const persona = params.get('persona') || 'papa';
-  const quando = params.get('quando') || 'domani, 19:00 – 21:00';
+  const idEvento = params.get('id');
+  const token = params.get('token');
 
-  document.getElementById('event-title').textContent = titolo;
-  document.getElementById('event-when').textContent = quando;
-  document.getElementById('persona-label').textContent =
-    (persona === 'mamma' ? 'Mamma ha aggiunto' : 'Papà ha aggiunto');
-  document.getElementById('done-title').textContent = titolo;
-
+  const formBody = document.getElementById('form-body');
+  const statoBlock = document.getElementById('stato-block');
+  const statoTick = document.getElementById('stato-tick');
+  const statoTesto = document.getElementById('stato-testo');
+  const btnSave = document.getElementById('btn-save');
+  const btnSkip = document.getElementById('btn-skip');
   const locInput = document.getElementById('loc-input');
+  const noteInput = document.getElementById('note-input');
+
+  function mostraStato(ok, testo) {
+    formBody.classList.add('hide');
+    statoBlock.classList.add('show');
+    statoBlock.classList.add(ok ? 'ok' : 'err');
+    statoTick.textContent = ok ? '✓' : '✕';
+    statoTesto.textContent = testo;
+  }
+
+  // ---- Controllo parametri essenziali ----
+  if (!idEvento || !token) {
+    document.getElementById('persona-label').textContent = '';
+    mostraStato(false, 'Link non valido: mancano i parametri necessari. Riprova a scansionare il QR dal device.');
+  } else {
+    caricaDettaglio();
+  }
+
+  // ---- Caricamento dettaglio evento ----
+  async function caricaDettaglio() {
+    try {
+      const url = `${APPS_SCRIPT_URL}?azione=dettaglio&id=${encodeURIComponent(idEvento)}`;
+      const risposta = await fetch(url);
+      const dati = await risposta.json();
+
+      if (!dati.ok) {
+        mostraStato(false, 'Impossibile trovare questo evento: ' + (dati.errore || 'errore sconosciuto'));
+        return;
+      }
+
+      const ev = dati.evento;
+      document.getElementById('persona-label').textContent =
+        (ev.persona === 'mamma' ? 'Mamma ha aggiunto' :
+         ev.persona === 'papa'  ? 'Papà ha aggiunto'  : 'Evento');
+      document.getElementById('event-title').textContent = ev.titolo;
+      document.getElementById('event-when').textContent =
+        formattaData(ev.giorno) + ', ' + ev.oraInizio + ' – ' + ev.oraFine;
+
+      // Precompila con i valori già presenti, se l'evento viene riaperto
+      if (ev.localita) locInput.value = ev.localita;
+      if (ev.note) noteInput.value = ev.note;
+
+    } catch (err) {
+      mostraStato(false, 'Errore di connessione: verifica di essere online e riprova.');
+    }
+  }
+
+  function formattaData(isoData) {
+    // "2026-07-25" -> "sab 25/07"
+    const giorni = ['dom','lun','mar','mer','gio','ven','sab'];
+    const d = new Date(isoData + 'T00:00:00');
+    const gg = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return giorni[d.getDay()] + ' ' + gg + '/' + mm;
+  }
+
+  // ---- Chip località rapide ----
   document.querySelectorAll('#loc-chips .chip').forEach(chip => {
     chip.addEventListener('click', () => {
       document.querySelectorAll('#loc-chips .chip').forEach(c => c.classList.remove('selected'));
@@ -269,12 +329,39 @@
     document.querySelectorAll('#loc-chips .chip').forEach(c => c.classList.remove('selected'));
   });
 
-  function finish(){
-    document.getElementById('form-body').classList.add('hide');
-    document.getElementById('done-block').classList.add('show');
+  // ---- Salvataggio ----
+  async function salva() {
+    btnSave.disabled = true;
+    btnSave.textContent = 'Salvataggio…';
+
+    try {
+      const url = `${APPS_SCRIPT_URL}?azione=aggiorna`
+        + `&id=${encodeURIComponent(idEvento)}`
+        + `&token=${encodeURIComponent(token)}`
+        + `&localita=${encodeURIComponent(locInput.value)}`
+        + `&note=${encodeURIComponent(noteInput.value)}`;
+
+      const risposta = await fetch(url);
+      const dati = await risposta.json();
+
+      if (dati.ok) {
+        mostraStato(true, 'Aggiunto! Ora è visibile anche sul display in cucina.');
+      } else {
+        mostraStato(false, 'Non è stato possibile salvare: ' + (dati.errore || 'errore sconosciuto'));
+        btnSave.disabled = false;
+        btnSave.textContent = 'Salva';
+      }
+    } catch (err) {
+      mostraStato(false, 'Errore di connessione: verifica di essere online e riprova.');
+      btnSave.disabled = false;
+      btnSave.textContent = 'Salva';
+    }
   }
-  document.getElementById('btn-save').addEventListener('click', finish);
-  document.getElementById('btn-skip').addEventListener('click', finish);
+
+  btnSave.addEventListener('click', salva);
+  btnSkip.addEventListener('click', () => {
+    mostraStato(true, 'Va bene così, nessuna modifica salvata.');
+  });
 </script>
 </body>
 </html>
