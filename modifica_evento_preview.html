@@ -219,6 +219,48 @@
   .stato p{ font-size:19px; margin:0; color:var(--ink); }
   .form-body.hide{ display:none; }
 
+  .caricamento{
+    display:block;
+    text-align:center;
+    padding: 30px 0;
+  }
+  .caricamento.hide{ display:none; }
+  .caricamento p{
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 0;
+  }
+  .spinner{
+    width: 34px; height: 34px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    border: 4px solid var(--paper-edge);
+    border-top-color: var(--amber);
+    animation: girare 0.8s linear infinite;
+  }
+  @keyframes girare{ to{ transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce){
+    .spinner{ animation: none; }
+  }
+
+  .btn-retry{
+    font-family:inherit;
+    font-size: 19px;
+    font-weight: 700;
+    padding: 14px 22px;
+    border-radius: 12px;
+    border: none;
+    background: var(--amber);
+    color: #2b1c04;
+    cursor:pointer;
+    margin-top: 18px;
+    display: none;
+    box-shadow: 0 4px 0 var(--amber-dark);
+  }
+  .btn-retry.show{ display: inline-block; }
+  .btn-retry:active{ transform: translateY(2px); box-shadow: 0 2px 0 var(--amber-dark); }
+
   .preview-tag{
     max-width:420px;
     margin: 16px auto 0;
@@ -235,8 +277,13 @@
     <div class="note">
       <div class="pin"></div>
 
-      <div class="form-body" id="form-body">
-        <p class="eyebrow" id="persona-label">Caricamento…</p>
+      <div class="caricamento" id="caricamento-block">
+        <div class="spinner"></div>
+        <p>Caricamento…</p>
+      </div>
+
+      <div class="form-body hide" id="form-body">
+        <p class="eyebrow" id="persona-label"></p>
         <input type="text" class="titolo-input" id="event-title" value="" />
         <p class="when" id="event-when">&nbsp;</p>
 
@@ -258,6 +305,7 @@
       <div class="stato" id="stato-block">
         <div class="tick" id="stato-tick">✓</div>
         <p id="stato-testo">…</p>
+        <button class="btn-retry" id="btn-retry">Clicca qui per riprovare</button>
       </div>
     </div>
 
@@ -272,40 +320,60 @@
   const idEvento = params.get('id');
   const token = params.get('token');
 
+  const caricamentoBlock = document.getElementById('caricamento-block');
   const formBody = document.getElementById('form-body');
   const statoBlock = document.getElementById('stato-block');
   const statoTick = document.getElementById('stato-tick');
   const statoTesto = document.getElementById('stato-testo');
+  const btnRetry = document.getElementById('btn-retry');
   const btnSave = document.getElementById('btn-save');
   const btnSkip = document.getElementById('btn-skip');
   const locInput = document.getElementById('loc-input');
   const noteInput = document.getElementById('note-input');
 
-  function mostraStato(ok, testo) {
+  // azioneRiprova: funzione da richiamare col pulsante "Clicca qui per riprovare".
+  // Se omessa, il pulsante resta nascosto (per errori dove riprovare non ha senso,
+  // es. link non valido).
+  function mostraStato(ok, testo, azioneRiprova) {
+    caricamentoBlock.classList.add('hide');
     formBody.classList.add('hide');
+    statoBlock.classList.remove('ok', 'err');
     statoBlock.classList.add('show');
     statoBlock.classList.add(ok ? 'ok' : 'err');
     statoTick.textContent = ok ? '✓' : '✕';
     statoTesto.textContent = testo;
+
+    if (!ok && azioneRiprova) {
+      btnRetry.classList.add('show');
+      btnRetry.onclick = () => {
+        statoBlock.classList.remove('show');
+        azioneRiprova();
+      };
+    } else {
+      btnRetry.classList.remove('show');
+      btnRetry.onclick = null;
+    }
   }
 
   // ---- Controllo parametri essenziali ----
   if (!idEvento || !token) {
-    document.getElementById('persona-label').textContent = '';
-    mostraStato(false, 'Link non valido: mancano i parametri necessari. Riprova a scansionare il QR dal device.');
+    mostraStato(false, 'Link non valido. Riprova a scansionare il QR dal device.');
   } else {
     caricaDettaglio();
   }
 
   // ---- Caricamento dettaglio evento ----
   async function caricaDettaglio() {
+    caricamentoBlock.classList.remove('hide');
+    statoBlock.classList.remove('show');
+
     try {
       const url = `${APPS_SCRIPT_URL}?azione=dettaglio&id=${encodeURIComponent(idEvento)}`;
       const risposta = await fetch(url);
       const dati = await risposta.json();
 
       if (!dati.ok) {
-        mostraStato(false, 'Impossibile trovare questo evento: ' + (dati.errore || 'errore sconosciuto'));
+        mostraStato(false, 'Evento non trovato.');
         return;
       }
 
@@ -321,8 +389,11 @@
       if (ev.localita) locInput.value = ev.localita;
       if (ev.note) noteInput.value = ev.note;
 
+      caricamentoBlock.classList.add('hide');
+      formBody.classList.remove('hide');
+
     } catch (err) {
-      mostraStato(false, 'Errore di connessione: verifica di essere online e riprova.');
+      mostraStato(false, 'Errore di connessione.', caricaDettaglio);
     }
   }
 
@@ -354,14 +425,10 @@
       if (dati.ok) {
         mostraStato(true, 'Aggiunto! Ora è visibile anche sul display in cucina.');
       } else {
-        mostraStato(false, 'Non è stato possibile salvare: ' + (dati.errore || 'errore sconosciuto'));
-        btnSave.disabled = false;
-        btnSave.textContent = 'Salva';
+        mostraStato(false, 'Non è stato possibile salvare.', salva);
       }
     } catch (err) {
-      mostraStato(false, 'Errore di connessione: verifica di essere online e riprova.');
-      btnSave.disabled = false;
-      btnSave.textContent = 'Salva';
+      mostraStato(false, 'Errore di connessione.', salva);
     }
   }
 
