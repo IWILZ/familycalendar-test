@@ -408,8 +408,17 @@
 
   // ---- Salvataggio ----
   async function salva() {
-    btnSave.disabled = true;
-    btnSave.textContent = 'Salvataggio…';
+    // Se il form era già nascosto (stiamo riprovando dopo un errore),
+    // mostriamo lo spinner: altrimenti lo schermo resterebbe vuoto
+    // per tutta la durata della richiesta, che è confuso da vedere.
+    const stiamoRiprovando = formBody.classList.contains('hide');
+    if (stiamoRiprovando) {
+      caricamentoBlock.classList.remove('hide');
+      statoBlock.classList.remove('show');
+    } else {
+      btnSave.disabled = true;
+      btnSave.textContent = 'Salvataggio…';
+    }
 
     try {
       const url = `${APPS_SCRIPT_URL}?azione=aggiorna`
