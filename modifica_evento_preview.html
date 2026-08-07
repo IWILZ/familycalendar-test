@@ -111,6 +111,32 @@
     margin: 0 0 22px;
     min-height: 21px;
   }
+  .quando-riga{
+    display:flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0 0 22px;
+  }
+  .quando-orari{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+  }
+  .quando-orari span{
+    color: var(--ink-soft);
+    font-size: 17px;
+  }
+  .quando-riga input{
+    font-family: inherit;
+    font-size: 17px;
+    padding: 10px 10px;
+    border-radius: 10px;
+    border: 2px solid var(--paper-edge);
+    background: #fffefb;
+    color: var(--ink);
+    width: 100%;
+  }
+  #ora-inizio-input, #ora-fine-input{ flex: 1; min-width: 0; }
 
   label{
     display:block;
@@ -285,7 +311,14 @@
       <div class="form-body hide" id="form-body">
         <p class="eyebrow" id="persona-label"></p>
         <input type="text" class="titolo-input" id="event-title" value="" />
-        <p class="when" id="event-when">&nbsp;</p>
+        <div class="quando-riga">
+          <input type="date" id="data-input" />
+          <div class="quando-orari">
+            <input type="time" id="ora-inizio-input" />
+            <span>–</span>
+            <input type="time" id="ora-fine-input" />
+          </div>
+        </div>
 
         <label for="loc-input">Dove? <span class="opt">(facoltativo)</span></label>
         <p style="font-size:14px; color:var(--ink-soft); margin:-2px 0 10px;">
@@ -382,8 +415,9 @@
         (ev.persona === 'mamma' ? 'Mamma ha aggiunto' :
          ev.persona === 'papa'  ? 'Papà ha aggiunto'  : 'Evento');
       document.getElementById('event-title').value = ev.titolo;
-      document.getElementById('event-when').textContent =
-        formattaData(ev.giorno) + ', ' + ev.oraInizio + ' – ' + ev.oraFine;
+      document.getElementById('data-input').value = ev.giorno;
+      document.getElementById('ora-inizio-input').value = ev.oraInizio;
+      document.getElementById('ora-fine-input').value = ev.oraFine;
 
       // Precompila con i valori già presenti, se l'evento viene riaperto
       if (ev.localita) locInput.value = ev.localita;
@@ -421,10 +455,22 @@
     }
 
     try {
+      const nuovaData = document.getElementById('data-input').value;
+      const nuovaOraInizio = document.getElementById('ora-inizio-input').value;
+      const nuovaOraFine = document.getElementById('ora-fine-input').value;
+
+      if (!nuovaData || !nuovaOraInizio || !nuovaOraFine) {
+        mostraStato(false, 'Data e orari non possono essere vuoti.');
+        return;
+      }
+
       const url = `${APPS_SCRIPT_URL}?azione=aggiorna`
         + `&id=${encodeURIComponent(idEvento)}`
         + `&token=${encodeURIComponent(token)}`
         + `&titolo=${encodeURIComponent(document.getElementById('event-title').value)}`
+        + `&giorno=${encodeURIComponent(nuovaData)}`
+        + `&oraInizio=${encodeURIComponent(nuovaOraInizio)}`
+        + `&oraFine=${encodeURIComponent(nuovaOraFine)}`
         + `&localita=${encodeURIComponent(locInput.value)}`
         + `&note=${encodeURIComponent(noteInput.value)}`;
 
