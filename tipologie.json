@@ -12,8 +12,5 @@
   "shopping":     { titolo: "Shopping",             localita: "" },
   "cinema":       { titolo: "Cinema/Spettacolo",    localita: "" },
   "conferenza":   { titolo: "Conferenza",           localita: "" },
-//  "masha":        { titolo: "Masha",                localita: "" },
-//  "nicolaj":      { titolo: "Nicolaj",              localita: "" },
-//  "attilia":      { titolo: "Attilia",              localita: "" },
   "generico":     { titolo: "...definire...",       localita: "" }
 }
