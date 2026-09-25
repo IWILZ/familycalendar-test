@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="manifest" href="manifest.json">
+  <title>Orari Masha</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f4f6f8;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .container {
+      width: 100%;
+      max-width: 480px;
+      background: #ffffff;
+      padding: 24px 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      height: fit-content;
+    }
+    h1 {
+      font-size: 24px;
+      text-align: center;
+      margin-bottom: 24px;
+      color: #1a73e8;
+    }
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .upload-btn-wrapper {
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+    }
+    .btn-photo {
+      border: 2px solid #1a73e8;
+      color: #1a73e8;
+      background-color: #f8fbff;
+      padding: 18px;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: bold;
+      width: 100%;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .btn-submit {
+      background-color: #1a73e8;
+      color: white;
+      border: none;
+      padding: 20px;
+      border-radius: 12px;
+      font-size: 20px;
+      font-weight: bold;
+      width: 100%;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+    .btn-submit:disabled {
+      background-color: #b0bec5;
+    }
+    input[type=file] {
+      font-size: 100px;
+      position: absolute;
+      left: 0; top: 0;
+      opacity: 0;
+      width: 100%; height: 100%;
+      cursor: pointer;
+    }
+    #file-name {
+      text-align: center;
+      font-size: 16px;
+      color: #2e7d32;
+      font-weight: bold;
+      margin-bottom: 12px;
+      word-break: break-all;
+    }
+    #status {
+      margin-top: 24px;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    .result-list { list-style: none; padding: 0; }
+    .result-item {
+      padding: 14px 10px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: space-between;
+      font-size: 16px;
+    }
+    .success { color: #2e7d32; font-weight: bold; }
+    .ignored { color: #757575; }
+    .error-box {
+      background-color: #ffebee;
+      color: #c62828;
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+    .spinner {
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #1a73e8;
+      border-radius: 50%;
+      width: 40px; height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>📅 Orari Masha</h1>
+
+    <div class="btn-group">
+      <div class="upload-btn-wrapper">
+        <button class="btn-photo">📷 Scatta Foto</button>
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="gestisciSelezione(this)">
+      </div>
+
+      <div class="upload-btn-wrapper">
+        <button class="btn-photo">🖼️ Scegli da Galleria</button>
+        <input type="file" id="galleryInput" accept="image/*" onchange="gestisciSelezione(this)">
+      </div>
+    </div>
+
+    <div id="file-name">Nessun file selezionato</div>
+
+    <button id="btnUpload" class="btn-submit" onclick="inviaFoto()">Invia e Crea Eventi</button>
+
+    <div id="status"></div>
+  </div>
+
+  <script>
+    // Inserisci qui l'URL della tua Web App registrata su Google Apps Script (/exec)
+    const APPS_SCRIPT_URL = "INCOLLA_QUI_L_URL_DELLA_TUA_WEB_APP_APPS_SCRIPT";
+
+    let fileSelezionato = null;
+
+    function gestisciSelezione(input) {
+      if (input.files.length > 0) {
+        fileSelezionato = input.files[0];
+        document.getElementById('file-name').innerText = "📄 Pronto: " + fileSelezionato.name;
+
+        if (input.id === 'cameraInput') {
+          document.getElementById('galleryInput').value = "";
+        } else {
+          document.getElementById('cameraInput').value = "";
+        }
+      }
+    }
+
+    async function inviaFoto() {
+      const statusDiv = document.getElementById('status');
+      const btn = document.getElementById('btnUpload');
+
+      if (!fileSelezionato) {
+        alert("Scatta o seleziona una foto prima di inviare.");
+        return;
+      }
+
+      btn.disabled = true;
+      statusDiv.innerHTML = '<div class="spinner"></div><p style="text-align:center; font-weight:bold;">Analisi della tabella in corso...</p>';
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const base64Data = e.target.result.split(',')[1];
+
+        try {
+          const response = await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({
+              image: base64Data,
+              mimeType: fileSelezionato.type
+            })
+          });
+
+          const res = await response.json();
+          btn.disabled = false;
+
+          if (!res.success) {
+            statusDiv.innerHTML = `<div class="error-box"><b>Errore:</b> ${res.error}</div>`;
+            return;
+          }
+
+          let html = '<ul class="result-list">';
+          res.risultati.forEach(r => {
+            if (r.esito === "CREATO") {
+              html += `<li class="result-item success"><span>${r.data}</span> <span>${r.titolo}</span></li>`;
+            } else {
+              html += `<li class="result-item ignored"><span>${r.data}</span> <span>${r.motivo}</span></li>`;
+            }
+          });
+          html += '</ul>';
+          statusDiv.innerHTML = html;
+
+        } catch (err) {
+          btn.disabled = false;
+          statusDiv.innerHTML = `<div class="error-box"><b>Errore di rete:</b> ${err.message}</div>`;
+        }
+      };
+
+      reader.readAsDataURL(fileSelezionato);
+    }
+  </script>
+</body>
+</html>
