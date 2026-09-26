@@ -145,7 +145,6 @@
   </div>
 
   <script>
-    // Inserisci qui l'URL della tua Web App registrata su Google Apps Script (/exec)
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw7lv1SbysG8OoIFw2NMlZP31YhPETN5rnlgcCmkf20kXPKCK8kO6dZorl57nxfIo7g/exec";
 
     let fileSelezionato = null;
@@ -163,45 +162,44 @@
       }
     }
 
-    async function inviaFoto() {
+    function inviaFoto() {
       const statusDiv = document.getElementById('status');
       const btn = document.getElementById('btnUpload');
-    
+
       if (!fileSelezionato) {
         alert("Scatta o seleziona una foto prima di inviare.");
         return;
       }
-    
+
       btn.disabled = true;
       statusDiv.innerHTML = '<div class="spinner"></div><p style="text-align:center; font-weight:bold;">Analisi della tabella in corso...</p>';
-    
+
       const reader = new FileReader();
-      reader.onload = async function(e) {
+      reader.onload = function(e) {
         const base64Data = e.target.result.split(',')[1];
-    
-        try {
-          // Usiamo URLSearchParams per evitare problemi di CORS pre-flight con Apps Script
-          const payload = {
-            image: base64Data,
-            mimeType: fileSelezionato.type
-          };
-    
-          const response = await fetch(APPS_SCRIPT_URL, {
-            method: "POST",
-            headers: {
-              "Content-Type": "text/plain;charset=utf-8"
-            },
-            body: JSON.stringify(payload)
-          });
-    
-          const res = await response.json();
+
+        const payload = {
+          image: base64Data,
+          mimeType: fileSelezionato.type
+        };
+
+        fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          mode: "cors",
+          redirect: "follow",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(res => {
           btn.disabled = false;
-    
           if (!res.success) {
             statusDiv.innerHTML = `<div class="error-box"><b>Errore:</b> ${res.error}</div>`;
             return;
           }
-    
+
           let html = '<ul class="result-list">';
           res.risultati.forEach(r => {
             if (r.esito === "CREATO") {
@@ -212,13 +210,13 @@
           });
           html += '</ul>';
           statusDiv.innerHTML = html;
-    
-        } catch (err) {
+        })
+        .catch(err => {
           btn.disabled = false;
           statusDiv.innerHTML = `<div class="error-box"><b>Errore di rete:</b> ${err.message}</div>`;
-        }
+        });
       };
-    
+
       reader.readAsDataURL(fileSelezionato);
     }
   </script>
