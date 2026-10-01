@@ -3,6 +3,9 @@
   "dottore": { "titolo": "Dott. Brambilla", "localita": "" },
   "esame": { "titolo": "Esame medico", "localita": "" },
   "visita": { "titolo": "Visita medica", "localita": "" },
+  "dentista": { "titolo": "Dentista", "localita": "" },
+  "telefonare": { "titolo": "Chiamare ...", "localita": "" },
+  "akita": { "titolo": "Pastiglia Akita", "localita": "" },
   "baruffi": { "titolo": "Baruffi", "localita": "" },
   "brioschi": { "titolo": "Brioschi", "localita": "" },
   "avvocato": { "titolo": "Avvocato", "localita": "" },
@@ -10,7 +13,6 @@
   "moto": { "titolo": "Giro in moto", "localita": "" },
   "viaggio": { "titolo": "Viaggio", "localita": "" },
   "shopping": { "titolo": "Shopping", "localita": "" },
-  "cinema": { "titolo": "Cinema/Spettacolo", "localita": "" },
-  "conferenza": { "titolo": "Conferenza", "localita": "" },
-  "generico": { "titolo": "...definire...", "localita": "" }
+  "cinema": { "titolo": "Cinema/Spett/Conferenza", "localita": "" },
+  "generico": { "titolo": "da definire...", "localita": "" }
 }
